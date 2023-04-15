@@ -84,7 +84,7 @@ client.on('interactionCreate', async interaction => {
                 clearTimeout(recordWarning)
                 recordWarning = setTimeout(function () {
                     interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-                }, 10000)
+                }, 120000)
             break;
         }
     }
@@ -111,7 +111,7 @@ client.on('interactionCreate', async interaction => {
                 recordWarning = setTimeout(function () {
                     interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
 
-                }, 10000)
+                }, 120000)
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
                 secondsAgoText = secondsAgo.toString()
@@ -219,7 +219,7 @@ client.on('interactionCreate', async interaction => {
             recordWarning = setTimeout(function () {
                 interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
 
-            }, 10000),
+            }, 120000),
             interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
         break;
 
@@ -234,7 +234,7 @@ client.on('interactionCreate', async interaction => {
             recordWarning = setTimeout(function () {
                 interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
 
-            }, 10000)
+            }, 120000)
 
             interaction.reply({content: 'Recording reset'})
         break;
@@ -276,7 +276,7 @@ client.on('interactionCreate', async interaction => {
                 recordWarning = setTimeout(function () {
                     interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
     
-                }, 10000),
+                }, 120000),
                 interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
                 )
         break;
