@@ -141,12 +141,12 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => { 
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['render' + clipdurationtext + 's.mp4']})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp4']})
                             .catch(error => {
                                 interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['render' + clipdurationtext + 's.mp4']})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['clip.mp4']})
                         .catch(error => {
                             interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
                         })
@@ -194,12 +194,12 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => {
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['render' + clipdurationtext + 's.mp4']})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp4']})
                             .catch(error => {
                                 interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['render' + clipdurationtext + 's.mp4']})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['clip.mp4']})
                         .catch(error => {
                             interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
                         })
