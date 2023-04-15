@@ -1,5 +1,5 @@
 # caught in 1080p
- Discord bot Youtube stream clipper
+ Discord bot Youtube stream clipper, inspired from https://odieldomanie.github.io/callipper/
  
  
  # Configuration
