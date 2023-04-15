@@ -1,6 +1,8 @@
 # caught in 1080p
  Discord bot Youtube stream clipper, inspired from https://odieldomanie.github.io/callipper/
  
+ While this project is name caught in 1080p, this bot only records in 720p lmao
+ 
  
  # Configuration
 Create a `config.json` file, and enter those information :
