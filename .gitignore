@@ -23,4 +23,6 @@ notes.txt
 *.sln
 *.sw?
 *.mp4
+*.mp3
 config.json
+settings_*.json

@@ -23,6 +23,8 @@ To clip a stream, this bot needs to start recording it to be able to clip it, wh
 
 I still haven't covered the case where you set a video/vod as a stream to record, so you may encounter issues by doing this so please only try to set up streams.
 
+While saving a clip with the save button, please do not edit the 2nd text input since it will automatically be filled with the clip's URL, I'll maybe try to find out if I can directly make the bot download the clip and directly send it instead of sending its URL.
+
 This is still a beta version of the bot, some unexpected errors can happen and crash the bot, be careful while using it!
 
 # How to use it
@@ -33,8 +35,10 @@ You can use those commands :
 * `stop` - To stop recording a stream. The recording that will be done before you use that command will be lost.
 * `record` - To start recording a stream in case you used `/stop`.
 * `reset` - To reset a recording, this will avoid to encode a heavy video file to clip, the recording that will be done before you use that command will be lost.
-* `c` - To clip the on going recording, it's required to set `seconds_ago` to set from when you want to clip, `duration` is optional, it will clip until the end of the recording if you don't input a duration. You can input decimals for `seconds_ago` and `duration`, the output will give you information about the clip and the recording to help you reclipping it in case you're didn't catch the moment you wanted!
-* `reclip` - Does the same as `/c` but clips from the latest recording you encoded with `/c`, this should be used to make a better clip in case you're not satisfied with the last one you did.
+* `c` / `a` - To clip the on going recording, it's required to set `seconds_ago` to set from when you want to clip, `duration` is optional, it will clip until the end of the recording if you don't input a duration. You can input decimals for `seconds_ago` and `duration`, the output will give you information about the clip and the recording to help you reclipping it in case you're didn't catch the moment you wanted! Also does audio clip with `a`
+* `reclip` / `reclipaudio` - Does the same as `/c` but clips from the latest recording you encoded with `/c`, this should be used to make a better clip in case you're not satisfied with the last one you did. Also does audio clip with `reclipaudio`. Since the first render will be a video no matter if you use `c` or `a`, you can use `reclipaudio` even if you used `c` first, same thing with `reclip` and `a` 
+* `channel` - To set up a channel where the bot will send the clips you'll save thanks to the save button below every clips.
+
 
 ### More (idk)
 When you'll get messages with a reset button telling you that it had been 2 minutes since you started recording, this will help you to not forget to reset the stream!
