@@ -118,7 +118,7 @@ async function RecordStream(url, interaction){
             recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
             clearTimeout(recordWarning),
             recordWarning = setTimeout(function () {
-                interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
             }, 120000),
         )
 }
@@ -179,11 +179,11 @@ client.on('interactionCreate', async interaction => {
                         recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
                         clearTimeout(recordWarning),
                         recordWarning = setTimeout(function () {
-                            interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                            interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                         }, 120000),
                     )
                 
-                interaction.message.edit({content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                 interaction.reply({content: 'Recording reset!', ephemeral: true})
             break;
             
@@ -521,7 +521,7 @@ client.on('interactionCreate', async interaction => {
                     recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
                     clearTimeout(recordWarning),
                     recordWarning = setTimeout(function () {
-                        interaction.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                        interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                     }, 120000),
                 interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
                 )
