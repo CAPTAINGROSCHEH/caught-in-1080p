@@ -269,7 +269,6 @@ client.on('interactionCreate', async interaction => {
             }
             
             let settings = await ReadSettings(interaction.guildId);
-            console.log(settings)
 
             settings.channel = await interaction.options.get('channel').value
             
@@ -325,9 +324,6 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => { 
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-
-                        let sus = "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"
-                        console.log(sus.substring(sus.indexOf("<") + 1, sus.lastIndexOf(">")))
 
                         interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
                             .catch(async (error) => {
