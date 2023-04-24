@@ -4,9 +4,11 @@ const { ActivityType, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuil
 const ytdl = require('ytdl-core');
 const ffmpeg = require('ffmpeg-static');
 const { spawn } = require('child_process');
+const axios = require('axios');
 const fs = require('fs');
 const { getVideoDurationInSeconds } = require('get-video-duration');
 const { ButtonBuilder } = require("@discordjs/builders");
+const { time } = require("console");
 
 const client = new discord.Client({
     intents: [
@@ -20,12 +22,13 @@ const client = new discord.Client({
     ]
 })
 
-client.once('ready', () => {
+client.once('ready', async () => {
 	console.log(`We clippin! ${client.user.tag}.`);
     client.user.setPresence({
         activities: [{name: "Clipping", type: ActivityType.Playing}],
         status: "dnd",
     })
+    
 });
 
 async function sleep(ms){
@@ -53,6 +56,35 @@ async function ReadSettings(guildId){
 
     return settings;
 }
+
+async function SecondsToString(seconds){
+    let string;
+    if(seconds>=0 && seconds<60){
+        string = seconds + "s"
+    }else if (seconds>=60 && seconds<3600){
+        string = Math.floor(seconds % 3600 / 60) + "m" + Math.floor(seconds % 60) + "s"
+    }else if(seconds>=3600 && seconds<86400){
+        string = Math.floor(seconds % (3600*24) / 3600) + "h" + Math.floor(seconds % 3600 / 60) + "m" + Math.floor(seconds % 60) + "s"
+    }else if(seconds>=86400){
+        string = Math.floor(seconds / (3600*24)) + "d" + Math.floor(seconds % (3600*24) / 3600) + "h" + Math.floor(seconds % 3600 / 60) + "m" + Math.floor(seconds % 60) + "s"
+    }
+
+    return string;
+}
+
+async function GetStreamStartTime(url){
+    await axios.get('https://holodex.net/api/v2/live?id=' + url, {
+        headers: {
+          "X-APIKEY": "a80e8260-d572-4365-aace-435a3107c069"
+        }
+      })
+    .then(async (res) => {
+        timestamp = Math.floor(Date.now() / 1000) - new Date(res.data[0].start_actual).getTime() / 1000
+    })
+
+    return timestamp
+}
+
 
 function WriteSettings(interaction, settings){
     fs.writeFile('./settings/settings_' + interaction.guildId + '.json', JSON.stringify(settings, null, 2), 'utf8', (err) => {
@@ -102,7 +134,7 @@ let clipduration;
 let clipdurationtext;
 let recordtime;
 let recordWarning;
-
+let streamtimestamp;
 
 
 async function RecordStream(url, interaction){
@@ -150,8 +182,11 @@ client.on('interactionCreate', async interaction => {
             case 'modalClipTitle':
                 settings = await ReadSettings(interaction.guildId)
 
+                let args = interaction.fields.getTextInputValue('clipUrl').split(' ');
+
+
                 let channel = client.channels.cache.get(settings.channel)
-                let messageSavedClip = await channel.send(interaction.fields.getTextInputValue('clipTitle') + '\n' + interaction.fields.getTextInputValue('clipUrl'))
+                let messageSavedClip = await channel.send(interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>\n' + args[0])
                 interaction.reply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
             
             break;
@@ -209,7 +244,7 @@ client.on('interactionCreate', async interaction => {
                 const inputClipURL = new TextInputBuilder()
                     .setCustomId('clipUrl')
                     .setLabel("Clip's URL (DO NOT EDIT THIS)")
-                    .setValue(interaction.message.attachments.first().url)
+                    .setValue(interaction.message.attachments.first().url + " " + interaction.message.content.substring(interaction.message.content.indexOf("<") + 1, interaction.message.content.lastIndexOf(">")))
                     .setStyle(TextInputStyle.Short)
 
                 const inputURLActionRow = new ActionRowBuilder().addComponents(inputClipURL)
@@ -248,7 +283,10 @@ client.on('interactionCreate', async interaction => {
             }
             
             await interaction.reply({content: 'Starting to clip...'})
-            await stream.close()            
+            await stream.close()           
+            
+            streamtimestamp = await GetStreamStartTime(VIDEO_URL.slice(17))
+            
             clipping = spawn(ffmpeg, args1)
             interaction.editReply({content: 'Encoding the recording...'})
             
@@ -258,6 +296,8 @@ client.on('interactionCreate', async interaction => {
                 RecordStream(VIDEO_URL,interaction);
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
+
+
                 secondsAgoText = secondsAgo.toString()
 
                 if(interaction.options.get('duration') === null){
@@ -285,14 +325,18 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => { 
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp4'], components: [btnSave]})
-                            .catch(error => {
-                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+
+                        let sus = "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"
+                        console.log(sus.substring(sus.indexOf("<") + 1, sus.lastIndexOf(">")))
+
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                            .catch(async (error) => {
+                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['clip.mp4'], components: [btnSave]})
-                        .catch(error => {
-                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                         })
                     }
                 })
@@ -306,6 +350,9 @@ client.on('interactionCreate', async interaction => {
             
             await interaction.reply({content: 'Starting to clip...'})
             await stream.close()            
+            
+            streamtimestamp = await GetStreamStartTime(VIDEO_URL.slice(17))
+
             clipping = spawn(ffmpeg, args1)
             interaction.editReply({content: 'Encoding the recording...'})
             
@@ -315,6 +362,9 @@ client.on('interactionCreate', async interaction => {
                 RecordStream(VIDEO_URL,interaction);
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
+
+                
+
                 secondsAgoText = secondsAgo.toString()
 
                 if(interaction.options.get('duration') === null){
@@ -342,14 +392,14 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => { 
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp3'], components: [btnSave]})
-                            .catch(error => {
-                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp3'], components: [btnSave]})
+                            .catch(async (error) => {
+                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp3') + " seconds", files: ['clip.mp4'], components: [btnSave]})
-                        .catch(error => {
-                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp3') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                         })
                     }
                 })
@@ -395,14 +445,14 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => {
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp4'], components: [btnSave]})
-                            .catch(error => {
-                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                            .catch(async (error) => {
+                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['clip.mp4'], components: [btnSave]})
-                        .catch(error => {
-                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                         })
                     }
                 })
@@ -448,14 +498,14 @@ client.on('interactionCreate', async interaction => {
                 cut.on('close', async () => {
                     await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds", files: ['clip.mp3'], components: [btnSave]})
-                            .catch(error => {
-                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp3'], components: [btnSave]})
+                            .catch(async (error) => {
+                                interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
                     }else{
-                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds", files: ['clip.mp3'], components: [btnSave]})
-                        .catch(error => {
-                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)"})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp3'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                         })
                     }
                 })
