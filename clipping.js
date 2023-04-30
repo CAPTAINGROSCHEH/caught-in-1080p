@@ -182,26 +182,30 @@ client.on('interactionCreate', async interaction => {
             case 'modalClipTitle':
                 settings = await ReadSettings(interaction.guildId)
 
-                let args = interaction.fields.getTextInputValue('clipUrl').split(' ');
-                
+                let clipUrl = interaction.message.attachments.first().url 
+                let link = interaction.message.content.substring(interaction.message.content.indexOf("<") + 1, interaction.message.content.lastIndexOf(">"))
+                let timestamp = interaction.message.content.substring(interaction.message.content.indexOf("["), interaction.message.content.indexOf(']') + 1)
+
+                console.log(clipUrl + '\n' + link)
+
                 interaction.reply({content: 'Saving...', ephemeral: true})
 
                 let channel = client.channels.cache.get(settings.channel)
                 let messageSavedClip = await channel.send({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>',
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>',
                     files: [{
-                        attachment: args[0],
-                        name: interaction.fields.getTextInputValue('clipTitle') + args[0].slice(args[0].lastIndexOf('.'))
+                        attachment: clipUrl,
+                        name: interaction.fields.getTextInputValue('clipTitle') + clipUrl.slice(clipUrl.lastIndexOf('.'))
                     }]
                 })
 
                 interaction.editReply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
 
                 await messageSavedClip.edit({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>\n<' + messageSavedClip.attachments.first().url + '>',
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>\n<' + messageSavedClip.attachments.first().url + '>',
                     files: [{
-                        attachment: args[0],
-                        name: interaction.fields.getTextInputValue('clipTitle') + args[0].slice(args[0].lastIndexOf('.'))
+                        attachment: clipUrl,
+                        name: interaction.fields.getTextInputValue('clipTitle') + clipUrl.slice(clipUrl.lastIndexOf('.'))
                     }]
                 })
             
@@ -257,15 +261,7 @@ client.on('interactionCreate', async interaction => {
 
                 const inputTitleActionRow = new ActionRowBuilder().addComponents(inputClipTitle)
 
-                const inputClipURL = new TextInputBuilder()
-                    .setCustomId('clipUrl')
-                    .setLabel("Clip's URL (DO NOT EDIT THIS)")
-                    .setValue(interaction.message.attachments.first().url + " " + interaction.message.content.substring(interaction.message.content.indexOf("<") + 1, interaction.message.content.lastIndexOf(">")))
-                    .setStyle(TextInputStyle.Short)
-
-                const inputURLActionRow = new ActionRowBuilder().addComponents(inputClipURL)
-
-                modalClipTitle.addComponents(inputTitleActionRow, inputURLActionRow)
+                modalClipTitle.addComponents(inputTitleActionRow)
 
 
                 interaction.showModal(modalClipTitle);
@@ -532,7 +528,7 @@ client.on('interactionCreate', async interaction => {
             }
             stream.close()
 
-            RecordStream(VIDEO_URL,interaction)
+            RecordStream(VIDEO_URL, interaction)
 
             interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
         break;

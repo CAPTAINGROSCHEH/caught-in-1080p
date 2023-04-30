@@ -1,4 +1,4 @@
-const { REST, SlashCommandBuilder, Routes } = require('discord.js');
+const { REST, SlashCommandBuilder, Routes, ChannelType } = require('discord.js');
 const { clientId, token } = require('./config.json');
 
 
@@ -72,6 +72,7 @@ const commands = [
 		option.setName('channel')
 			.setDescription('The channel you want to send your favorite clips')
 			.setRequired(true)
+			.addChannelTypes(ChannelType.GuildText)
 	),
 
 ]
