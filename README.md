@@ -23,8 +23,6 @@ To clip a stream, this bot needs to start recording it to be able to clip it, wh
 
 I still haven't covered the case where you set a video/vod as a stream to record, so you may encounter issues by doing this so please only try to set up streams.
 
-While saving a clip with the save button, please do not edit the 2nd text input since it will automatically be filled with the clip's URL, I'll maybe try to find out if I can directly make the bot download the clip and directly send it instead of sending its URL.
-
 This is still a beta version of the bot, some unexpected errors can happen and crash the bot, be careful while using it!
 
 # How to use it
