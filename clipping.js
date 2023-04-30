@@ -183,11 +183,27 @@ client.on('interactionCreate', async interaction => {
                 settings = await ReadSettings(interaction.guildId)
 
                 let args = interaction.fields.getTextInputValue('clipUrl').split(' ');
-
+                
+                interaction.reply({content: 'Saving...', ephemeral: true})
 
                 let channel = client.channels.cache.get(settings.channel)
-                let messageSavedClip = await channel.send(interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>\n' + args[0])
-                interaction.reply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
+                let messageSavedClip = await channel.send({
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>',
+                    files: [{
+                        attachment: args[0],
+                        name: interaction.fields.getTextInputValue('clipTitle') + args[0].slice(args[0].lastIndexOf('.'))
+                    }]
+                })
+
+                interaction.editReply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
+
+                await messageSavedClip.edit({
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : <' + args[1] + '>\n<' + messageSavedClip.attachments.first().url + '>',
+                    files: [{
+                        attachment: args[0],
+                        name: interaction.fields.getTextInputValue('clipTitle') + args[0].slice(args[0].lastIndexOf('.'))
+                    }]
+                })
             
             break;
         }
@@ -315,6 +331,8 @@ client.on('interactionCreate', async interaction => {
                     '-ss', timestamptext, 
                     '-t', clipdurationtext,
                     '-c:v', 'libx264', // Video codec
+                    '-crf', '18',
+                    '-preset', 'slower',
                     '-c:a', 'aac', // Audio codec (copy from input)
                     'clip.mp4' // Output file 
                   ];
@@ -431,7 +449,7 @@ client.on('interactionCreate', async interaction => {
                     '-ss', timestamptext, 
                     '-t', clipdurationtext,
                     '-c:v', 'libx264', // Video codec
-                    '-c:a', 'aac', // Audio codec (copy from input)
+                    '-c:a', 'copy', // Audio codec (copy from input)
                     'clip.mp4' // Output file 
                 ];
 
