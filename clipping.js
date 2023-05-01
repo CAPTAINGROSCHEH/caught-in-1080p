@@ -186,8 +186,6 @@ client.on('interactionCreate', async interaction => {
                 let link = interaction.message.content.substring(interaction.message.content.indexOf("<") + 1, interaction.message.content.lastIndexOf(">"))
                 let timestamp = interaction.message.content.substring(interaction.message.content.indexOf("["), interaction.message.content.indexOf(']') + 1)
 
-                console.log(clipUrl + '\n' + link)
-
                 interaction.reply({content: 'Saving...', ephemeral: true})
 
                 let channel = client.channels.cache.get(settings.channel)
