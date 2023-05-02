@@ -52,6 +52,11 @@ const commands = [
 		option.setName("duration")
 			.setDescription("Optional. Clip's duration (leaving this empty will clip up to the end of the latest recording")
 			.setMinValue(0.1)
+	)
+	.addStringOption(option =>
+		option.setName("720p")
+			.setDescription("Reclip it in 720p in case it lagged for 1080p")
+			.addChoices({ name: 'Yes', value: 'yes'})
 	),
 
 	new SlashCommandBuilder().setName('reclipaudio').setDescription("Redo the audio clip of the latest recording")
@@ -74,6 +79,10 @@ const commands = [
 			.setRequired(true)
 			.addChannelTypes(ChannelType.GuildText)
 	),
+
+	new SlashCommandBuilder().setName('record1080p').setDescription("Start the recording... BUT IN 1080P!"),
+
+
 
 ]
 	.map(command => command.toJSON());
