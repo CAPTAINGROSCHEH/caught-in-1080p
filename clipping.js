@@ -288,22 +288,21 @@ client.on('interactionCreate', async interaction => {
                 interaction.reply({content: 'Saving...', ephemeral: true})
 
                 let channel = client.channels.cache.get(settings.channel)
-                let messageSaved = await channel.send({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>'
-                })
-
-                let messageClip = await channel.send({
+                let messageSavedClip = await channel.send({
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>',
                     files: [{
                         attachment: clipUrl,
                         name: interaction.fields.getTextInputValue('clipTitle') + clipUrl.slice(clipUrl.lastIndexOf('.'))
                     }]
                 })
 
-                interaction.editReply({content: 'Clip saved in ' + messageClip.url , ephemeral: true})
-
-                await messageSaved.edit({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>\n<' + messageClip.attachments.first().url + '>'
+                let messageLink = await messageSavedClip.reply({
+                    content: '```\n' + interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>\n' + messageSavedClip.attachments.first().url + ' ```'
                 })
+
+                interaction.editReply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
+
+
             
             break;
         }
