@@ -188,7 +188,7 @@ async function RecordStream(url, interaction){
             clearTimeout(autoreset),
             autoreset = setTimeout(function () {
                 RecordStream(url, interaction)
-                interaction.channel.send({content: 'Recording has been automatically reset!'})
+                interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
             }, 240000)
         )
 }
@@ -202,7 +202,7 @@ async function RecordStream1080p(url, interaction){
         }
     })
     .pipe(
-        streamaudio = fs.createWriteStream('audio.mp4'),
+        stream = fs.createWriteStream('video.mp4'),
         recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
         clearTimeout(recordWarning),
         recordWarning = setTimeout(function () {
@@ -210,33 +210,10 @@ async function RecordStream1080p(url, interaction){
         }, 120000),
         clearTimeout(autoreset),
         autoreset = setTimeout(function () {
-            RecordStream(url, interaction)
-            interaction.channel.send({content: 'Recording has been automatically reset!'})
+            RecordStream1080p(url, interaction)
+            interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
         }, 240000)
     )
-
-    /*
-    ytdl(url, { quality: 'highestvideo', filter: 'videoonly' })
-        .on('error', async (err) => {
-            console.error(err.message)
-            if(err.message.startsWith('No video id found')){
-                return await interaction.reply({content: 'Stream not found'})
-            }
-        })
-        .pipe(
-            stream = fs.createWriteStream('video.mp4'),
-            recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
-            clearTimeout(recordWarning),
-            recordWarning = setTimeout(function () {
-                interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-            }, 120000),
-            clearTimeout(autoreset),
-            autoreset = setTimeout(function () {
-                RecordStream(url, interaction)
-                interaction.channel.send({content: 'Recording has been automatically reset!'})
-            }, 240000)
-        )
-        */
 }
 
 
@@ -257,10 +234,7 @@ const btnSave = new ActionRowBuilder()
     )
 
 
-
-
 client.on('interactionCreate', async interaction => {
-    
 
     if(interaction.isModalSubmit()){
         switch(interaction.customId){
@@ -305,7 +279,9 @@ client.on('interactionCreate', async interaction => {
                     return await interaction.reply({content: 'No stream set up.'})
                 }
                 stream.close()
-                ytdl(VIDEO_URL)
+
+                if(record1080p === true){
+                    ytdl(VIDEO_URL, { quality: 'lowest'})
                     .on('error', async (err) => {
                         console.error(err.message)
                         if(err.message.startsWith('No video id found')){
@@ -319,10 +295,39 @@ client.on('interactionCreate', async interaction => {
                         recordWarning = setTimeout(function () {
                             interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                         }, 120000),
+                        clearTimeout(autoreset),
+                        autoreset = setTimeout(function () {
+                            RecordStream1080p(VIDEO_URL, interaction)
+                            interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                        }, 240000)
                     )
-                
-                interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-                interaction.reply({content: 'Recording reset!', ephemeral: true})
+                    interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                    interaction.reply({content: 'Recording reset!', ephemeral: true})
+                }else{
+                    ytdl(VIDEO_URL)
+                        .on('error', async (err) => {
+                            console.error(err.message)
+                            if(err.message.startsWith('No video id found')){
+                                return await interaction.reply({content: 'Stream not found'})
+                            }
+                        })
+                        .pipe(
+                            stream = fs.createWriteStream('video.mp4'),
+                            recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+                            clearTimeout(recordWarning),
+                            recordWarning = setTimeout(function () {
+                                interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                            }, 120000),
+                            clearTimeout(autoreset),
+                            autoreset = setTimeout(function () {
+                                RecordStream(VIDEO_URL, interaction)
+                                interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                            }, 240000)
+                        )
+                    
+                    interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                    interaction.reply({content: 'Recording reset!', ephemeral: true})
+                }
             break;
             
             case 'save':
@@ -378,156 +383,66 @@ client.on('interactionCreate', async interaction => {
             
 
             await interaction.reply({content: 'Starting to clip...'})
-            console.log(record1080p)
-            if(record1080p === 'sus'){
-                await streamaudio.close()
-                await stream.close()
 
-                streamtimestamp = await GetStreamStartTime(VIDEO_URL.slice(17))
+            await stream.close()           
                 
-                clearTimeout(autoreset)
-                clearTimeout(recordWarning)
-                extractaudio = spawn(ffmpeg, argsExtract)
+            streamtimestamp = await GetStreamStartTime(VIDEO_URL.slice(17))
                 
-                interaction.editReply({content: 'Extracting audio...'})
-
-                extractaudio.on('close', async () => {
-                    fs.copyFile('audio.mp4', 'lastaudio.mp4', (err) =>{
-                        if(err) console.error(err)
-                    })
-                    encodevideo = spawn(ffmpeg, argsVideo)
-
-                    interaction.editReply({content: 'Encoding video...'})
-
-
-                    encodevideo.on('close', async () => {
-
-                        RecordStream1080p(VIDEO_URL, interaction)
-
-                        let audioDuration = await getVideoDurationInSeconds('audio.mp3')
-                        let viduration = await getVideoDurationInSeconds('rendered.mp4')
-
-                        const args1080p = [
-                            '-i', 'rendered.mp4', 
-                            '-i', 'audio.mp3',
-                            '-y',
-                            '-ss', '' + (viduration - audioDuration) ,
-                            '-t', '' + audioDuration,
-                            '-c:v', 'copy',
-                            '-c:v', 'copy',
-                            'render.mp4'
-                        ]
-
-                        merging = spawn(ffmpeg, args1080p)
-                        interaction.editReply({content: 'Merging video and audio...'})
-        
-                        merging.on('close', async () => {
-
-                            secondsAgo = interaction.options.get('seconds_ago').value
+            clipping = spawn(ffmpeg, args1)
+            interaction.editReply({content: 'Encoding the recording...'})
+                
+            clipping.on('close', async () => {
     
-    
-                            secondsAgoText = secondsAgo.toString()
-            
-                            if(interaction.options.get('duration') === null){
-                                clipduration = viduration
-                            }else{
-                                clipduration = interaction.options.get('duration').value
-                            }
-            
-                            timestamp = clipduration - secondsAgo;
-                            timestamptext = timestamp.toString()
-                            clipdurationtext = clipduration.toString()
-                            
-                            let args2 = [
-                                '-i', 'render.mp4', // Input file
-                                '-y', //force overwrite
-                                '-ss', timestamptext, 
-                                '-t', clipdurationtext,
-                                '-c:v', 'libx264', // Video codec
-                                '-c:a', 'aac', // Audio codec (copy from input)
-                                'clip.mp4' // Output file 
-                              ];
-            
-                            cut = spawn(ffmpeg, args2)
-                            interaction.editReply({content: 'Trimming the recording...'})
-                            cut.on('close', async () => { 
-                                await interaction.editReply({content: 'Done!'})
-                                if(interaction.options.get('duration') === null){
-            
-                                    interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                        .catch(async (error) => {
-                                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                        })
-                                }else{
-                                    interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                    .catch(async (error) => {
-                                        interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                    })
-                                }
-                            })
-                        })
-                    })
-                })
-            }else{
-                await stream.close()           
-                
-                streamtimestamp = await GetStreamStartTime(VIDEO_URL.slice(17))
-                
-                clipping = spawn(ffmpeg, args1)
-                interaction.editReply({content: 'Encoding the recording...'})
-                
-                
-                clipping.on('close', async () => {
-    
+                if(record1080p === true){
+                    RecordStream1080p(VIDEO_URL,interaction);
+                }else{
                     RecordStream(VIDEO_URL,interaction);
+                }
                                     
-                    secondsAgo = interaction.options.get('seconds_ago').value
+                secondsAgo = interaction.options.get('seconds_ago').value
     
+                secondsAgoText = secondsAgo.toString()
     
-                    secondsAgoText = secondsAgo.toString()
+                if(interaction.options.get('duration') === null){
+                    clipduration = await getVideoDurationInSeconds('render.mp4')
+                }else{
+                    clipduration = interaction.options.get('duration').value
+                }
     
+                timestamp = await getVideoDurationInSeconds('render.mp4') - secondsAgo;
+                timestamptext = timestamp.toString()
+                clipdurationtext = clipduration.toString()
+                
+                let args2 = [
+                    '-i', 'render.mp4', // Input file
+                    '-y', //force overwrite
+                    '-ss', timestamptext, 
+                    '-t', clipdurationtext,
+                    '-b:v', '5M',
+                    '-c:v', 'libx264', // Video codec
+                    '-c:a', 'aac', // Audio codec (copy from input)
+                    'clip.mp4' // Output file 
+                  ];
+
+                cut = spawn(ffmpeg, args2)
+                interaction.editReply({content: 'Trimming the recording...'})
+                cut.on('close', async () => { 
+                    await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        clipduration = await getVideoDurationInSeconds('render.mp4')
-                    }else{
-                        clipduration = interaction.options.get('duration').value
-                    }
     
-                    timestamp = await getVideoDurationInSeconds('render.mp4') - secondsAgo;
-                    timestamptext = timestamp.toString()
-                    clipdurationtext = clipduration.toString()
-                    
-                    let args2 = [
-                        '-i', 'render.mp4', // Input file
-                        '-y', //force overwrite
-                        '-ss', timestamptext, 
-                        '-t', clipdurationtext,
-                        '-c:v', 'libx264', // Video codec
-                        '-crf', '18',
-                        '-preset', 'slower',
-                        '-c:a', 'aac', // Audio codec (copy from input)
-                        'clip.mp4' // Output file 
-                      ];
-    
-                    cut = spawn(ffmpeg, args2)
-                    interaction.editReply({content: 'Trimming the recording...'})
-                    cut.on('close', async () => { 
-                        await interaction.editReply({content: 'Done!'})
-                        if(interaction.options.get('duration') === null){
-    
-                            interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                .catch(async (error) => {
-                                    interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                })
-                        }else{
-                            interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
                             .catch(async (error) => {
                                 interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
-                        }
-                    })
+                    }else{
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
+                        })
+                    }
                 })
-            }
-            
+            })
+        
         break;
 
         case 'a':
@@ -543,14 +458,15 @@ client.on('interactionCreate', async interaction => {
             clipping = spawn(ffmpeg, args1)
             interaction.editReply({content: 'Encoding the recording...'})
             
-            
             clipping.on('close', async () => {
 
-                RecordStream(VIDEO_URL,interaction);
+                if(record1080p === true){
+                    RecordStream1080p(VIDEO_URL,interaction);
+                }else{
+                    RecordStream(VIDEO_URL,interaction);
+                }
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
-
-                
 
                 secondsAgoText = secondsAgo.toString()
 
@@ -602,109 +518,47 @@ client.on('interactionCreate', async interaction => {
             });
 
             if(renderFound === true){
-                if(interaction.options.get("720p") === null){
-                    await interaction.reply({content: 'Starting to clip...'})
-                    secondsAgo = interaction.options.get('seconds_ago').value
-                    secondsAgoText = secondsAgo.toString()
+                await interaction.reply({content: 'Starting to clip...'})
+                secondsAgo = interaction.options.get('seconds_ago').value
+                secondsAgoText = secondsAgo.toString()
+
+                if(interaction.options.get('duration') === null){
+                    clipduration = await getVideoDurationInSeconds('render.mp4')
+                }else{
+                    clipduration = interaction.options.get('duration').value
+                }
     
+                timestamp = await getVideoDurationInSeconds('render.mp4') - secondsAgo;
+                timestamptext = timestamp.toString()
+                clipdurationtext = clipduration.toString()
+                
+                let args2 = [
+                    '-i', 'render.mp4', // Input file
+                    '-y', //force overwrite
+                    '-ss', timestamptext, 
+                    '-t', clipdurationtext,
+                    '-c:v', 'libx264', // Video codec
+                    '-c:a', 'copy', // Audio codec (copy from input)
+                    'clip.mp4' // Output file 
+                ];
+
+                cut = spawn(ffmpeg, args2)
+                interaction.editReply({content: 'Cutting the recording...'})
+    
+                cut.on('close', async () => {
+                    await interaction.editReply({content: 'Done!'})
                     if(interaction.options.get('duration') === null){
-                        clipduration = await getVideoDurationInSeconds('render.mp4')
-                    }else{
-                        clipduration = interaction.options.get('duration').value
-                    }
-    
-                    timestamp = await getVideoDurationInSeconds('render.mp4') - secondsAgo;
-                    timestamptext = timestamp.toString()
-                    clipdurationtext = clipduration.toString()
-                    
-                    let args2 = [
-                        '-i', 'render.mp4', // Input file
-                        '-y', //force overwrite
-                        '-ss', timestamptext, 
-                        '-t', clipdurationtext,
-                        '-c:v', 'libx264', // Video codec
-                        '-c:a', 'copy', // Audio codec (copy from input)
-                        'clip.mp4' // Output file 
-                    ];
-    
-                    cut = spawn(ffmpeg, args2)
-                    interaction.editReply({content: 'Cutting the recording...'})
-    
-                    cut.on('close', async () => {
-                        await interaction.editReply({content: 'Done!'})
-                        if(interaction.options.get('duration') === null){
-                            interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                .catch(async (error) => {
-                                    interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                })
-                        }else{
-                            interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
                             .catch(async (error) => {
                                 interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                             })
-                        }
-                    })
-                }else{
-                    await interaction.reply({content: 'Starting to reclip...'})
-
-                    const argsReclip1080p = [
-                        '-i', 'lastaudio.mp4', // Input file
-                        '-y', //force overwrite
-                        '-c:v', 'libx264', // Video codec
-                        '-preset', 'ultrafast', // Encoding speed
-                        '-crf', '23', // Constant rate factor (quality)
-                        '-c:a', 'copy', // Audio codec (copy from input)
-                        'render.mp4' // Output file
-                      ];
-
-                    lastaudio = spawn(ffmpeg, argsReclip1080p)
-
-                    lastaudio.on('close', async () => {
-                        secondsAgo = interaction.options.get('seconds_ago').value
-                        secondsAgoText = secondsAgo.toString()
-        
-                        if(interaction.options.get('duration') === null){
-                            clipduration = await getVideoDurationInSeconds('render.mp4')
-                        }else{
-                            clipduration = interaction.options.get('duration').value
-                        }
-        
-                        timestamp = await getVideoDurationInSeconds('render.mp4') - secondsAgo;
-                        timestamptext = timestamp.toString()
-                        clipdurationtext = clipduration.toString()
-                        
-                        let args2 = [
-                            '-i', 'render.mp4', // Input file
-                            '-y', //force overwrite
-                            '-ss', timestamptext, 
-                            '-t', clipdurationtext,
-                            '-c:v', 'libx264', // Video codec
-                            '-c:a', 'aac', // Audio codec (copy from input)
-                            'clip.mp4' // Output file 
-                        ];
-        
-                        cut = spawn(ffmpeg, args2)
-                        interaction.editReply({content: 'Cutting the recording...'})
-        
-                        cut.on('close', async () => {
-                            await interaction.editReply({content: 'Done!'})
-                            if(interaction.options.get('duration') === null){
-                                interaction.channel.send({content: "Clipped from " + timestamptext + " to " + clipdurationtext + " seconds. Latest recording duration : " + clipduration + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                    .catch(async (error) => {
-                                        interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                    })
-                            }else{
-                                interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
-                                .catch(async (error) => {
-                                    interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
-                                })
-                            }
+                    }else{
+                        interaction.channel.send({content: "Clipped from " + timestamptext + " to " + (timestamp + clipduration) + " seconds. Latest recording duration : " + await getVideoDurationInSeconds('render.mp4') + " seconds\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)", files: ['clip.mp4'], components: [btnSave]})
+                        .catch(async (error) => {
+                            interaction.channel.send({content: "Clip weights more than 25MB (still not able to send shiitake to a webserver)\nTimestamp : [" + await SecondsToString(streamtimestamp - secondsAgo) + "](<" + VIDEO_URL + "?t=" + (streamtimestamp - secondsAgo) + ">)"})
                         })
-                    })
-
-                    
-                }
-                
+                    }
+                })
             }
         break;
 
@@ -736,8 +590,9 @@ client.on('interactionCreate', async interaction => {
                     '-y', //force overwrite
                     '-ss', timestamptext, 
                     '-t', clipdurationtext,
+                    '-b:v', '5M',
                     '-b:a', '192K', // Audio 
-                    '-vn', //idk lol
+                    '-vn', // No video
                     'clip.mp3' // Output file 
                   ];
 
@@ -777,12 +632,9 @@ client.on('interactionCreate', async interaction => {
             if(stream === undefined){
                 return await interaction.reply({content: 'No stream set up.'})
             }
-            if(streamaudio !== undefined){
-                streamaudio.close();
-            }
+
             record1080p = true;
             stream.close()
-            let info = await ytdl.getInfo(VIDEO_URL)
 
             RecordStream1080p(VIDEO_URL, interaction)
 
@@ -795,7 +647,11 @@ client.on('interactionCreate', async interaction => {
             }
             stream.close()
             
-            RecordStream(VIDEO_URL,interaction)
+            if(record1080p === true){
+                RecordStream1080p(VIDEO_URL, interaction)
+            }else{
+                RecordStream(VIDEO_URL,interaction)
+            }
 
             interaction.reply({content: 'Recording reset'})
         break;
@@ -825,7 +681,6 @@ client.on('interactionCreate', async interaction => {
                 }
             }
             
-            
             ytdl(VIDEO_URL)
                 .on('error', async (err) => {
                     console.error(err.message)
@@ -840,168 +695,15 @@ client.on('interactionCreate', async interaction => {
                     recordWarning = setTimeout(function () {
                         interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                     }, 120000),
+                    clearTimeout(autoreset),
+                    autoreset = setTimeout(function () {
+                        RecordStream(VIDEO_URL, interaction)
+                        interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                    }, 240000),
                 interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
                 )
-                
-            
         break;
-        
-
-        
-    }
-
-});
-
-/* previous shiitake
-client.on('messageCreate', async message => {
-    if(message.author.bot == true){return}
-    console.log(stream)
-    let args = message.content.split(' ');
-    let command = args[0].toLowerCase();
-    try{
-
-
-        switch(command){
-            case 'cut':
-                stream.close()
-                clipping = spawn(ffmpeg, args1)
-                console.log("finis!")
-                
-                clipping.on('close', async () => {
-                    ytdl(VIDEO_URL).pipe(stream = fs.createWriteStream('video.mp4'))
-                    
-                    recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>'
-                    recordWarning = setTimeout(function () {
-                        message.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-    
-                    }, 10000)
-                    
-                    console.log("lol")
-                    
-                    if(args.length < 2){
-                        clipduration = 20;
-                    }else{
-                        clipduration = parseInt(args[1], 10);
-                    }
-                    timestamp = Math.floor(await getVideoDurationInSeconds('render.mp4') - clipduration);
-                    timestamptext = timestamp.toString()
-                    clipdurationtext = clipduration.toString()
-                    console.log(timestamp)
-                    
-                    let args2 = [
-                        '-i', 'render.mp4', // Input file
-                        '-y', //force overwrite
-                        '-ss', timestamptext, 
-                        '-t', clipdurationtext,
-                        //'-sseof', '-5',
-                        '-c:v', 'libx264', // Video codec
-                        '-c:a', 'aac', // Audio codec (copy from input)
-                        //'-c', 'copy',
-                        'render' + clipdurationtext + 's.mp4' // Output file
-                      ];
-                    sleep(1000)
-    
-                    cut = spawn(ffmpeg, args2)
-                    cut.on('close', () => { 
-                        console.log('finis pour de vrai')
-                        message.react("✅")
-                        message.channel.send({content: "voilà frr", files: ['render' + clipdurationtext + 's.mp4']}).catch(message.channel.send('fichier trop gros mon fwewe'))
-                    })
-                })
-            break;
-            case 'reset':
-                stream.close()
-                ytdl(VIDEO_URL).pipe(stream = fs.createWriteStream('video.mp4'))
-                message.react("✅")
-                message.channel.send('<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>')
-                recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>'
-                recordWarning = setTimeout(function () {
-                    message.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-
-                }, 10000)
-            break;
-            case 'stop':
-                if(stream != undefined){
-                    stream.close()
-                }
-            break;
-            case 'record':
-                if(VIDEO_URL == ''){ return message.channel.send("No stream got set up")}
-                ytdl(VIDEO_URL).pipe(stream = fs.createWriteStream('video.mp4'))
-                message.react("✅")
-                recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>'
-                recordWarning = setTimeout(function () {
-                    message.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-
-                }, 10000)
-            break;
-            case 'stream':
-                if(args.length < 2) { return }
-
-                if(args[1].startsWith('https://www.youtube.com/live/')){
-                    let s = args[1].replace('https://www.youtube.com/live/', 'https://youtu.be/')
-                    VIDEO_URL = s;
-                }else{
-                    VIDEO_URL = args[1];
-                }
-
-                ytdl(VIDEO_URL).pipe(stream = fs.createWriteStream('video.mp4'))
-                message.react("✅")
-                recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>'
-                recordWarning = setTimeout(function () {
-                    message.channel.send({ content: 'It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-
-                }, 10000)
-            break;
-            case 'recut':
-                enddelay = 0;
-                if(args.length > 2){
-                    clipduration = parseInt(args[1], 10);
-                    enddelay = parseInt(args[2], 10);
-                }else{
-                    if(args.length < 2){
-                        clipduration = 20;
-                    }else{
-                        clipduration = parseInt(args[1], 10);
-                    }
-                }
-                timestamp = Math.floor(await getVideoDurationInSeconds('render.mp4') - clipduration - enddelay);
-                timestamptext = timestamp.toString()
-                clipdurationtext = clipduration.toString()
-                enddelaytext = enddelay.toString()
-
-                console.log(timestamp)
-                
-                let args2 = [
-                    '-i', 'render.mp4', // Input file
-                    '-y', //force overwrite
-                    '-ss', timestamptext, 
-                    '-t', clipdurationtext,
-                    //'-sseof', '-5',
-                    '-c:v', 'libx264', // Video codec
-                    '-c:a', 'aac', // Audio codec (copy from input)
-                    //'-c', 'copy',
-                    'render' + clipdurationtext + 's.mp4' // Output file
-                  ];
-                sleep(500)
-
-                cut = spawn(ffmpeg, args2)
-                cut.on('close', () => {
-                    console.log('finis pour de vrai')
-                    message.react("✅")
-                    message.channel.send({content: "voilà frr", files: ['render' + clipdurationtext + 's.mp4']}).catch(message.channel.send('fichier trop gros mon fwewe'))
-                })
-            break;
-        }
-
-
-
-
-    }catch(e){
-        console.error(e)
     }
 });
-*/
-
 
 client.login(token);

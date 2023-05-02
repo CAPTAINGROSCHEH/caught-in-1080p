@@ -1,8 +1,6 @@
 # caught in 1080p
  Discord bot Youtube stream clipper, inspired from https://odieldomanie.github.io/callipper/
  
- While this project is name caught in 1080p, this bot only records in 720p lmao
- 
  
  # Configuration
 Create a `config.json` file, and enter those information :
@@ -23,15 +21,18 @@ To clip a stream, this bot needs to start recording it to be able to clip it, wh
 
 I still haven't covered the case where you set a video/vod as a stream to record, so you may encounter issues by doing this so please only try to set up streams.
 
+The recording in 1080p with `record1080p` is still a prototype, so you have to start it manually, if it doesn't work, use the regular `record` command to record in 720p.
+
 This is still a beta version of the bot, some unexpected errors can happen and crash the bot, be careful while using it!
 
 # How to use it
 ### Commands
 You can use those commands :
 
-* `stream` - To set up a stream to record, the record will start right when you set up the stream.
+* `stream` - To set up a stream to record, the record will start right when you set up the stream (on 720p by default).
 * `stop` - To stop recording a stream. The recording that will be done before you use that command will be lost.
 * `record` - To start recording a stream in case you used `/stop`.
+* `record1080p` - To start recording a stream in 1080p. This is a separate command in case it doesn't work since it's still a prototype.
 * `reset` - To reset a recording, this will avoid to encode a heavy video file to clip, the recording that will be done before you use that command will be lost.
 * `c` / `a` - To clip the on going recording, it's required to set `seconds_ago` to set from when you want to clip, `duration` is optional, it will clip until the end of the recording if you don't input a duration. You can input decimals for `seconds_ago` and `duration`, the output will give you information about the clip and the recording to help you reclipping it in case you're didn't catch the moment you wanted! Also does audio clip with `a`
 * `reclip` / `reclipaudio` - Does the same as `/c` but clips from the latest recording you encoded with `/c`, this should be used to make a better clip in case you're not satisfied with the last one you did. Also does audio clip with `reclipaudio`. Since the first render will be a video no matter if you use `c` or `a`, you can use `reclipaudio` even if you used `c` first, same thing with `reclip` and `a` 

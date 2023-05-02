@@ -52,11 +52,6 @@ const commands = [
 		option.setName("duration")
 			.setDescription("Optional. Clip's duration (leaving this empty will clip up to the end of the latest recording")
 			.setMinValue(0.1)
-	)
-	.addStringOption(option =>
-		option.setName("720p")
-			.setDescription("Reclip it in 720p in case it lagged for 1080p")
-			.addChoices({ name: 'Yes', value: 'yes'})
 	),
 
 	new SlashCommandBuilder().setName('reclipaudio').setDescription("Redo the audio clip of the latest recording")
