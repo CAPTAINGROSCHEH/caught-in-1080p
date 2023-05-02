@@ -17,7 +17,7 @@ Create a `config.json` file, and enter those information :
 And now you can finally clip with your bot!
 
 # Warning
-To clip a stream, this bot needs to start recording it to be able to clip it, which means that during the clipping process, the bot will have to save the entire recording in an unencoded file and in an encoded file. So it is important to **not let the recording last for a really long time if you don't have enough memory available on your computer/server**.
+To clip a stream, this bot needs to start recording it to be able to clip it, which means that during the clipping process, the bot will have to save the entire recording in an unencoded file and in an encoded file. So it is important to **not let the recording last for a really long time if you don't have enough memory available on your computer/server**, which is also the reason why the `settings` command exists to set up the time for the autoreset.
 
 I still haven't covered the case where you set a video/vod as a stream to record, so you may encounter issues by doing this so please only try to set up streams.
 

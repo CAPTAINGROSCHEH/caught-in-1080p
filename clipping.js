@@ -288,22 +288,21 @@ client.on('interactionCreate', async interaction => {
                 interaction.reply({content: 'Saving...', ephemeral: true})
 
                 let channel = client.channels.cache.get(settings.channel)
-                let messageSavedClip = await channel.send({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>',
+                let messageSaved = await channel.send({
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>'
+                })
+
+                let messageClip = await channel.send({
                     files: [{
                         attachment: clipUrl,
                         name: interaction.fields.getTextInputValue('clipTitle') + clipUrl.slice(clipUrl.lastIndexOf('.'))
                     }]
                 })
 
-                interaction.editReply({content: 'Clip saved in ' + messageSavedClip.url , ephemeral: true})
+                interaction.editReply({content: 'Clip saved in ' + messageClip.url , ephemeral: true})
 
-                await messageSavedClip.edit({
-                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>\n<' + messageSavedClip.attachments.first().url + '>',
-                    files: [{
-                        attachment: clipUrl,
-                        name: interaction.fields.getTextInputValue('clipTitle') + clipUrl.slice(clipUrl.lastIndexOf('.'))
-                    }]
+                await messageSaved.edit({
+                    content: interaction.fields.getTextInputValue('clipTitle') + '\nTimestamp : ' + timestamp + ' <' + link + '>\n<' + messageClip.attachments.first().url + '>'
                 })
             
             break;
