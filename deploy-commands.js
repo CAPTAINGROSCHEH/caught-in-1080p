@@ -77,6 +77,18 @@ const commands = [
 
 	new SlashCommandBuilder().setName('record1080p').setDescription("Start the recording... BUT IN 1080P!"),
 
+	new SlashCommandBuilder().setName('settings').setDescription("Set channel to send your best favorite clips")
+	.addNumberOption(option =>
+		option.setName('warningtime')
+			.setDescription('After how many seconds the bot will send you a warning to reset the recording')
+			.setMinValue(0)
+	)
+	.addNumberOption(option =>
+		option.setName('autoresettime')
+			.setDescription('After how many seconds the bot will automatically reset the recording')
+			.setMinValue(0)
+	)
+	
 
 
 ]

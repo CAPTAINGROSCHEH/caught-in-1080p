@@ -87,12 +87,13 @@ async function GetStreamStartTime(url){
 
 
 function WriteSettings(interaction, settings){
+    if(!fs.existsSync('./settings')){
+        fs.mkdirSync('./settings')
+    }
+
     fs.writeFile('./settings/settings_' + interaction.guildId + '.json', JSON.stringify(settings, null, 2), 'utf8', (err) => {
-        if(err)
-            interaction.reply({content: "There has been an error while setting up the channel", ephemeral: true})
-        else{
-            interaction.reply({content: "Channel set up to : <#" + settings['channel'] + ">", ephemeral: true })
-        }
+        if(err) interaction.channel.send({content: "There has been an error while setting up the channel", ephemeral: true})
+
     });
 }
 
@@ -157,20 +158,21 @@ const argsVideo = [
 ]
 
 let stream;
-let streamaudio;
 let clipping;
 let cut;
 let timestamptext;
 let secondsAgo;
 let clipduration;
 let clipdurationtext;
+let lastwarningmessage;
+let lastautoresetmessage;
 let recordtime;
 let recordWarning;
 let streamtimestamp;
 let record1080p = false;
 let autoreset;
 
-async function RecordStream(url, interaction){
+async function RecordStream(url, interaction, settings){
     ytdl(url)
         .on('error', async (err) => {
             console.error(err.message)
@@ -181,20 +183,30 @@ async function RecordStream(url, interaction){
         .pipe(
             stream = fs.createWriteStream('video.mp4'),
             recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+
             clearTimeout(recordWarning),
-            recordWarning = setTimeout(function () {
-                interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-            }, 120000),
+
+            recordWarning = setTimeout(async function () {
+                if(lastwarningmessage !== undefined){
+                    await lastwarningmessage.delete()
+                }
+                lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+            }, settings.warningtime * 1000),
+    
             clearTimeout(autoreset),
+
             autoreset = setTimeout(async function () {
                 await stream.close()
-                RecordStream(VIDEO_URL, interaction)
-                interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-            }, 240000),
+                RecordStream(url, interaction, settings)
+                if(lastautoresetmessage !== undefined){
+                    await lastautoresetmessage.delete()
+                }
+                lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+            }, settings.autoresettime * 1000),
         )
 }
 
-async function RecordStream1080p(url, interaction){
+async function RecordStream1080p(url, interaction, settings){
     ytdl(url, { quality: 'lowest'})
     .on('error', async (err) => {
         console.error(err.message)
@@ -205,16 +217,26 @@ async function RecordStream1080p(url, interaction){
     .pipe(
         stream = fs.createWriteStream('video.mp4'),
         recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+
         clearTimeout(recordWarning),
-        recordWarning = setTimeout(function () {
-            interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-        }, 120000),
+
+        recordWarning = setTimeout(async function () {
+            if(lastwarningmessage !== undefined){
+                await lastwarningmessage.delete()
+            }
+            lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+        }, settings.warningtime * 1000),
+
         clearTimeout(autoreset),
+
         autoreset = setTimeout(async function () {
             await stream.close()
-            RecordStream1080p(url, interaction)
-            interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-        }, 240000)
+            RecordStream1080p(url, interaction, settings)
+            if(lastautoresetmessage !== undefined){
+                await lastautoresetmessage.delete()
+            }
+            lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+        }, settings.autoresettime * 1000)
     )
 }
 
@@ -238,10 +260,22 @@ const btnSave = new ActionRowBuilder()
 
 client.on('interactionCreate', async interaction => {
 
+    let settings = await ReadSettings(interaction.guildId)
+
+    if(settings.warningtime === undefined){
+        settings.warningtime = 120;
+        WriteSettings(interaction, settings)
+
+    }
+    if(settings.autoresettime === undefined){
+        settings.autoresettime = 240;
+        WriteSettings(interaction, settings)
+
+    }
+
     if(interaction.isModalSubmit()){
         switch(interaction.customId){
             case 'modalClipTitle':
-                settings = await ReadSettings(interaction.guildId)
 
                 let clipUrl = interaction.message.attachments.first().url 
                 let link = interaction.message.content.substring(interaction.message.content.indexOf("<") + 1, interaction.message.content.lastIndexOf(">"))
@@ -293,16 +327,26 @@ client.on('interactionCreate', async interaction => {
                     .pipe(
                         stream = fs.createWriteStream('video.mp4'),
                         recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+
                         clearTimeout(recordWarning),
-                        recordWarning = setTimeout(function () {
-                            interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-                        }, 120000),
+
+                        recordWarning = setTimeout(async function () {
+                            if(lastwarningmessage !== undefined){
+                                await lastwarningmessage.delete()
+                            }
+                            lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                        }, settings.warningtime * 1000),
+
                         clearTimeout(autoreset),
+
                         autoreset = setTimeout(async function () {
                             await stream.close()
-                            RecordStream1080p(VIDEO_URL, interaction)
-                            interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-                        }, 240000)
+                            RecordStream1080p(VIDEO_URL, interaction, settings)
+                            if(lastautoresetmessage !== undefined){
+                                await lastautoresetmessage.delete()
+                            }
+                            lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                        }, settings.autoresettime * 1000)
                     )
                     interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                     interaction.reply({content: 'Recording reset!', ephemeral: true})
@@ -317,16 +361,26 @@ client.on('interactionCreate', async interaction => {
                         .pipe(
                             stream = fs.createWriteStream('video.mp4'),
                             recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+
                             clearTimeout(recordWarning),
-                            recordWarning = setTimeout(function () {
-                                interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-                            }, 120000),
+
+                            recordWarning = setTimeout(async function () {
+                                if(lastwarningmessage !== undefined){
+                                    await lastwarningmessage.delete()
+                                }
+                                lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                            }, settings.warningtime * 1000),
+
                             clearTimeout(autoreset),
+                            
                             autoreset = setTimeout(async function () {
                                 await stream.close()
-                                RecordStream(VIDEO_URL, interaction)
-                                interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-                            }, 240000),
+                                RecordStream(VIDEO_URL, interaction, settings)
+                                if(lastautoresetmessage !== undefined){
+                                    await lastautoresetmessage.delete()
+                                }
+                                lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                            }, settings.autoresettime * 1000),
                         )
                     
                     interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
@@ -335,7 +389,6 @@ client.on('interactionCreate', async interaction => {
             break;
             
             case 'save':
-                settings = await ReadSettings(interaction.guildId)
 
                 if(settings.channel === undefined){
                     return await interaction.reply({content: "No channel set up for saving clips, use `/channel`!", ephemeral: true})
@@ -371,12 +424,12 @@ client.on('interactionCreate', async interaction => {
             if(!(channel.isTextBased())){
                 return await interaction.reply({content: "You need to choose a text channel!", ephemeral: true})
             }
-            
-            let settings = await ReadSettings(interaction.guildId);
 
             settings.channel = await interaction.options.get('channel').value
             
             WriteSettings(interaction, settings)
+
+            interaction.reply({content: "Channel set up to : <#" + settings['channel'] + ">", ephemeral: true })
 
         break;
 
@@ -398,9 +451,9 @@ client.on('interactionCreate', async interaction => {
             clipping.on('close', async () => {
     
                 if(record1080p === true){
-                    RecordStream1080p(VIDEO_URL,interaction);
+                    RecordStream1080p(VIDEO_URL,interaction, settings);
                 }else{
-                    RecordStream(VIDEO_URL,interaction);
+                    RecordStream(VIDEO_URL,interaction, settings);
                 }
                                     
                 secondsAgo = interaction.options.get('seconds_ago').value
@@ -465,9 +518,9 @@ client.on('interactionCreate', async interaction => {
             clipping.on('close', async () => {
 
                 if(record1080p === true){
-                    RecordStream1080p(VIDEO_URL,interaction);
+                    RecordStream1080p(VIDEO_URL,interaction, settings);
                 }else{
-                    RecordStream(VIDEO_URL,interaction);
+                    RecordStream(VIDEO_URL,interaction, settings);
                 }
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
@@ -627,7 +680,7 @@ client.on('interactionCreate', async interaction => {
             record1080p = false;
             stream.close()
 
-            RecordStream(VIDEO_URL, interaction)
+            RecordStream(VIDEO_URL, interaction, settings)
 
             interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
         break;
@@ -640,7 +693,7 @@ client.on('interactionCreate', async interaction => {
             record1080p = true;
             stream.close()
 
-            RecordStream1080p(VIDEO_URL, interaction)
+            RecordStream1080p(VIDEO_URL, interaction, settings)
 
             interaction.reply({content : 'Recording in 1080p now!'})
         break;
@@ -652,19 +705,38 @@ client.on('interactionCreate', async interaction => {
             stream.close()
             
             if(record1080p === true){
-                RecordStream1080p(VIDEO_URL, interaction)
+                RecordStream1080p(VIDEO_URL, interaction, settings)
             }else{
-                RecordStream(VIDEO_URL,interaction)
+                RecordStream(VIDEO_URL,interaction, settings)
             }
 
             interaction.reply({content: 'Recording reset'})
         break;
 
+        case 'settings':
+            if(interaction.options.get('warningtime') === null && interaction.options.get('autoresettime') === null){
+                await interaction.reply({content: 'You have to set up at least one parameter!'})
+            }else{
+
+                if(interaction.options.get('warningtime') !== null ){
+                    settings.warningtime = interaction.options.get('warningtime').value
+                }
+
+                if(interaction.options.get('autoresettime') !== null){
+                    settings.autoresettime = interaction.options.get('autoresettime').value
+                }
+
+                WriteSettings(interaction, settings);
+                
+                interaction.reply({content: 'Settings saved! Warning time is ' + settings.warningtime + ' seconds and autoreset time is ' + settings.autoresettime + ' seconds!' })
+            }
+        break;
+
         case 'stop':
             if(stream !== undefined){
                 stream.close()
-                streamaudio.close()
                 clearTimeout(recordWarning)
+                clearTimeout(autoreset)
                 interaction.reply({content: 'Recording stopped.'})
             }else{
                 interaction.reply({content: 'No on going recording'})
@@ -673,6 +745,7 @@ client.on('interactionCreate', async interaction => {
         break;
 
         case 'stream':
+
             if(interaction.options.get('link').value.startsWith('https://www.youtube.com/live/')){
                 let s = interaction.options.get('link').value.replace('https://www.youtube.com/live/', 'https://youtu.be/')
                 VIDEO_URL = s;
@@ -695,16 +768,26 @@ client.on('interactionCreate', async interaction => {
                 .pipe(
                     stream = fs.createWriteStream('video.mp4'),
                     recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
+
                     clearTimeout(recordWarning),
-                    recordWarning = setTimeout(function () {
-                        interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
-                    }, 120000),
+
+                    recordWarning = setTimeout(async function () {
+                        if(lastwarningmessage !== undefined){
+                            await lastwarningmessage.delete()
+                        }
+                        lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
+                    }, settings.warningtime * 1000),
+
                     clearTimeout(autoreset),
+
                     autoreset = setTimeout(async function () {
                         await stream.close()
-                        RecordStream(VIDEO_URL, interaction)
-                        interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-                    }, 240000),
+                        RecordStream(VIDEO_URL, interaction, settings)
+                        if(lastautoresetmessage !== undefined){
+                            await lastautoresetmessage.delete()
+                        }
+                        lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+                    }, settings.autoresettime * 1000),
                 interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
                 )
         break;

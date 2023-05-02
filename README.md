@@ -29,6 +29,7 @@ This is still a beta version of the bot, some unexpected errors can happen and c
 ### Commands
 You can use those commands :
 
+* `settings` - To set up the time **in seconds** the bot needs to wait to send a warning about the recording's length (with `warningtime`) and to automatically reset (with `autoresettime`). By default the warning time would be 2 minutes and the autoreset time would be 4 minutes. I suggest to set the autoreset time shorter than 4 minutes.
 * `stream` - To set up a stream to record, the record will start right when you set up the stream (on 720p by default).
 * `stop` - To stop recording a stream. The recording that will be done before you use that command will be lost.
 * `record` - To start recording a stream in case you used `/stop`.
