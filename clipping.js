@@ -300,7 +300,7 @@ client.on('interactionCreate', async interaction => {
                         clearTimeout(autoreset),
                         autoreset = setTimeout(async function () {
                             await stream.close()
-                            RecordStream1080p(url, interaction)
+                            RecordStream1080p(VIDEO_URL, interaction)
                             interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
                         }, 240000)
                     )
