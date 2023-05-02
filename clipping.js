@@ -186,10 +186,11 @@ async function RecordStream(url, interaction){
                 interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
             }, 120000),
             clearTimeout(autoreset),
-            autoreset = setTimeout(function () {
-                RecordStream(url, interaction)
+            autoreset = setTimeout(async function () {
+                await stream.close()
+                RecordStream(VIDEO_URL, interaction)
                 interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-            }, 240000)
+            }, 240000),
         )
 }
 
@@ -209,7 +210,8 @@ async function RecordStream1080p(url, interaction){
             interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
         }, 120000),
         clearTimeout(autoreset),
-        autoreset = setTimeout(function () {
+        autoreset = setTimeout(async function () {
+            await stream.close()
             RecordStream1080p(url, interaction)
             interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
         }, 240000)
@@ -296,8 +298,9 @@ client.on('interactionCreate', async interaction => {
                             interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                         }, 120000),
                         clearTimeout(autoreset),
-                        autoreset = setTimeout(function () {
-                            RecordStream1080p(VIDEO_URL, interaction)
+                        autoreset = setTimeout(async function () {
+                            await stream.close()
+                            RecordStream1080p(url, interaction)
                             interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
                         }, 240000)
                     )
@@ -319,10 +322,11 @@ client.on('interactionCreate', async interaction => {
                                 interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                             }, 120000),
                             clearTimeout(autoreset),
-                            autoreset = setTimeout(function () {
+                            autoreset = setTimeout(async function () {
+                                await stream.close()
                                 RecordStream(VIDEO_URL, interaction)
                                 interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
-                            }, 240000)
+                            }, 240000),
                         )
                     
                     interaction.message.edit({content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
@@ -696,7 +700,8 @@ client.on('interactionCreate', async interaction => {
                         interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                     }, 120000),
                     clearTimeout(autoreset),
-                    autoreset = setTimeout(function () {
+                    autoreset = setTimeout(async function () {
+                        await stream.close()
                         RecordStream(VIDEO_URL, interaction)
                         interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
                     }, 240000),
