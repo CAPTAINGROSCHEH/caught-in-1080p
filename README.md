@@ -35,6 +35,7 @@ You can use those commands :
 * `record` - To start recording a stream in case you used `/stop`.
 * `record1080p` - To start recording a stream in 1080p. This is a separate command in case it doesn't work since it's still a prototype.
 * `reset` - To reset a recording, this will avoid to encode a heavy video file to clip, the recording that will be done before you use that command will be lost.
+* `postpone` - To postpone the next autoreset of the recording after `seconds` from the moment you send the command.
 * `c` / `a` - To clip the on going recording, it's required to set `seconds_ago` to set from when you want to clip, `duration` is optional, it will clip until the end of the recording if you don't input a duration. You can input decimals for `seconds_ago` and `duration`, the output will give you information about the clip and the recording to help you reclipping it in case you're didn't catch the moment you wanted! Also does audio clip with `a`
 * `reclip` / `reclipaudio` - Does the same as `/c` but clips from the latest recording you encoded with `/c`, this should be used to make a better clip in case you're not satisfied with the last one you did. Also does audio clip with `reclipaudio`. Since the first render will be a video no matter if you use `c` or `a`, you can use `reclipaudio` even if you used `c` first, same thing with `reclip` and `a` 
 * `channel` - To set up a channel where the bot will send the clips you'll save thanks to the save button below every clips.

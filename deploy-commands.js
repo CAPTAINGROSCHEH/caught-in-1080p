@@ -77,7 +77,7 @@ const commands = [
 
 	new SlashCommandBuilder().setName('record1080p').setDescription("Start the recording... BUT IN 1080P!"),
 
-	new SlashCommandBuilder().setName('settings').setDescription("Set channel to send your best favorite clips")
+	new SlashCommandBuilder().setName('settings').setDescription("Change your settings!")
 	.addNumberOption(option =>
 		option.setName('warningtime')
 			.setDescription('After how many seconds the bot will send you a warning to reset the recording')
@@ -87,9 +87,15 @@ const commands = [
 		option.setName('autoresettime')
 			.setDescription('After how many seconds the bot will automatically reset the recording')
 			.setMinValue(0)
-	)
+	),
 	
-
+	new SlashCommandBuilder().setName('postpone').setDescription("Postpone the autoreset")
+	.addNumberOption(option =>
+		option.setName('seconds')
+			.setDescription('After how many seconds from now the bot will automatically reset the recording')
+			.setMinValue(5)
+			.setRequired(true)
+	)
 
 ]
 	.map(command => command.toJSON());

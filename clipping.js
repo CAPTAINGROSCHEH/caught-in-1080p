@@ -172,7 +172,9 @@ let streamtimestamp;
 let record1080p = false;
 let autoreset;
 
-async function RecordStream(url, interaction, settings){
+async function RecordStream(url, interaction){
+    let settings = await ReadSettings(interaction.guildId)
+
     ytdl(url)
         .on('error', async (err) => {
             console.error(err.message)
@@ -197,7 +199,7 @@ async function RecordStream(url, interaction, settings){
 
             autoreset = setTimeout(async function () {
                 await stream.close()
-                RecordStream(url, interaction, settings)
+                RecordStream(url, interaction)
                 if(lastautoresetmessage !== undefined){
                     await lastautoresetmessage.delete()
                 }
@@ -206,7 +208,9 @@ async function RecordStream(url, interaction, settings){
         )
 }
 
-async function RecordStream1080p(url, interaction, settings){
+async function RecordStream1080p(url, interaction){
+    let settings = await ReadSettings(interaction.guildId)
+
     ytdl(url, { quality: 'lowest'})
     .on('error', async (err) => {
         console.error(err.message)
@@ -231,7 +235,7 @@ async function RecordStream1080p(url, interaction, settings){
 
         autoreset = setTimeout(async function () {
             await stream.close()
-            RecordStream1080p(url, interaction, settings)
+            RecordStream1080p(url, interaction)
             if(lastautoresetmessage !== undefined){
                 await lastautoresetmessage.delete()
             }
@@ -341,7 +345,7 @@ client.on('interactionCreate', async interaction => {
 
                         autoreset = setTimeout(async function () {
                             await stream.close()
-                            RecordStream1080p(VIDEO_URL, interaction, settings)
+                            RecordStream1080p(VIDEO_URL, interaction)
                             if(lastautoresetmessage !== undefined){
                                 await lastautoresetmessage.delete()
                             }
@@ -375,7 +379,7 @@ client.on('interactionCreate', async interaction => {
                             
                             autoreset = setTimeout(async function () {
                                 await stream.close()
-                                RecordStream(VIDEO_URL, interaction, settings)
+                                RecordStream(VIDEO_URL, interaction)
                                 if(lastautoresetmessage !== undefined){
                                     await lastautoresetmessage.delete()
                                 }
@@ -451,9 +455,9 @@ client.on('interactionCreate', async interaction => {
             clipping.on('close', async () => {
     
                 if(record1080p === true){
-                    RecordStream1080p(VIDEO_URL,interaction, settings);
+                    RecordStream1080p(VIDEO_URL,interaction);
                 }else{
-                    RecordStream(VIDEO_URL,interaction, settings);
+                    RecordStream(VIDEO_URL,interaction);
                 }
                                     
                 secondsAgo = interaction.options.get('seconds_ago').value
@@ -518,9 +522,9 @@ client.on('interactionCreate', async interaction => {
             clipping.on('close', async () => {
 
                 if(record1080p === true){
-                    RecordStream1080p(VIDEO_URL,interaction, settings);
+                    RecordStream1080p(VIDEO_URL,interaction);
                 }else{
-                    RecordStream(VIDEO_URL,interaction, settings);
+                    RecordStream(VIDEO_URL,interaction);
                 }
                                 
                 secondsAgo = interaction.options.get('seconds_ago').value
@@ -680,7 +684,7 @@ client.on('interactionCreate', async interaction => {
             record1080p = false;
             stream.close()
 
-            RecordStream(VIDEO_URL, interaction, settings)
+            RecordStream(VIDEO_URL, interaction)
 
             interaction.reply({content : 'Stream set to record : ' + VIDEO_URL})
         break;
@@ -693,7 +697,7 @@ client.on('interactionCreate', async interaction => {
             record1080p = true;
             stream.close()
 
-            RecordStream1080p(VIDEO_URL, interaction, settings)
+            RecordStream1080p(VIDEO_URL, interaction)
 
             interaction.reply({content : 'Recording in 1080p now!'})
         break;
@@ -705,9 +709,9 @@ client.on('interactionCreate', async interaction => {
             stream.close()
             
             if(record1080p === true){
-                RecordStream1080p(VIDEO_URL, interaction, settings)
+                RecordStream1080p(VIDEO_URL, interaction)
             }else{
-                RecordStream(VIDEO_URL,interaction, settings)
+                RecordStream(VIDEO_URL,interaction)
             }
 
             interaction.reply({content: 'Recording reset'})
@@ -734,7 +738,8 @@ client.on('interactionCreate', async interaction => {
 
         case 'stop':
             if(stream !== undefined){
-                stream.close()
+                await stream.close()
+                stream = '';
                 clearTimeout(recordWarning)
                 clearTimeout(autoreset)
                 interaction.reply({content: 'Recording stopped.'})
@@ -742,6 +747,28 @@ client.on('interactionCreate', async interaction => {
                 interaction.reply({content: 'No on going recording'})
                 
             }
+        break;
+
+        case 'postpone':
+            if(stream === '' || stream === undefined){
+                return await interaction.reply({content: 'No recording set up.'})
+            }    
+
+            clearTimeout(autoreset)
+
+            let newresettime = '<t:' + (Math.floor(new Date(Date.now()).getTime() / 1000) + interaction.options.get('seconds').value) + ':R>';
+
+            autoreset = setTimeout(async function () {
+                await stream.close()
+                RecordStream(VIDEO_URL, interaction)
+                if(lastautoresetmessage !== undefined){
+                    await lastautoresetmessage.delete()
+                }
+                lastautoresetmessage = await interaction.channel.send({content: 'Recording has been automatically reset! ' + recordtime})
+            }, interaction.options.get('seconds').value * 1000)
+        
+            interaction.reply({content: 'The recording will reset ' + newresettime})
+
         break;
 
         case 'stream':
@@ -758,6 +785,12 @@ client.on('interactionCreate', async interaction => {
                 }
             }
             
+            if(autoreset !== undefined){
+                clearTimeout(autoreset);
+                clearTimeout(recordWarning);
+            }
+
+
             ytdl(VIDEO_URL)
                 .on('error', async (err) => {
                     console.error(err.message)
@@ -769,8 +802,6 @@ client.on('interactionCreate', async interaction => {
                     stream = fs.createWriteStream('video.mp4'),
                     recordtime = '<t:' + Math.floor(new Date(Date.now()).getTime() / 1000) + ':R>',
 
-                    clearTimeout(recordWarning),
-
                     recordWarning = setTimeout(async function () {
                         if(lastwarningmessage !== undefined){
                             await lastwarningmessage.delete()
@@ -778,11 +809,9 @@ client.on('interactionCreate', async interaction => {
                         lastwarningmessage = await interaction.channel.send({ content: '<@' + interaction.member.id + '> It has been ' + recordtime + 'since the recording started, reset it to avoid encoding a heavy file', components: [btnReset]})
                     }, settings.warningtime * 1000),
 
-                    clearTimeout(autoreset),
-
                     autoreset = setTimeout(async function () {
                         await stream.close()
-                        RecordStream(VIDEO_URL, interaction, settings)
+                        RecordStream(VIDEO_URL, interaction)
                         if(lastautoresetmessage !== undefined){
                             await lastautoresetmessage.delete()
                         }
